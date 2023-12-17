@@ -8,7 +8,7 @@ package javaapplication9;
  *
  * @author igneu
  */
-public class JavaApplication9 {
+public class amine {
 
     /**
      * @param args the command line arguments
