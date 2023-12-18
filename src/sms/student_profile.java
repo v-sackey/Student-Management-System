@@ -2,16 +2,19 @@ package sms;
 
 import java.awt.HeadlessException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JOptionPane;
 
 public class student_profile extends javax.swing.JFrame {
 
     Connection conn = null;
     Statement stmt = null;
-    ResultSet rs = null;
+    ResultSet rs = null, rss = null;
 
     public student_profile() {
         super("Student Profile");
@@ -324,6 +327,7 @@ public class student_profile extends javax.swing.JFrame {
     }//GEN-LAST:event_student_courseActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+
         if (!sid.getText().isEmpty()) {
             try {
                 stmt = conn.createStatement();
@@ -334,14 +338,31 @@ public class student_profile extends javax.swing.JFrame {
                 String studentID = sid.getText();
                 String sql = "update etudiant SET nom='" + surname + "', prenom='" + firstname + "', email='" + studentEmail + "', filiere_id='" + departmentSelectedInt + "' where apogee='" + studentID + "' ";
                 stmt.executeUpdate(sql);
-                JOptionPane.showMessageDialog(null, "Data updated succesfully");
+                stmt.close(); // Close the first statement
+
+                stmt = conn.createStatement(); // Create a new statement
+                String co = "SELECT * FROM module WHERE filiere_id='" + departmentSelectedInt + "'";
+                rss = stmt.executeQuery(co);
+                List<String> modules = new ArrayList<>();
+                while (rss.next()) {
+                    modules.add(rss.getString("id"));
+                }
+                rss.close();
+                stmt.close();
+
+                stmt = conn.createStatement(); // Create a new statement for insertion
+                for (String module : modules) {
+                    String sql1 = "insert into grades (module_id, student_id, filiere_id) values ('" + module + "', '" + studentID + "', '" + departmentSelectedInt + "')";
+                    stmt.executeUpdate(sql1);
+                }
+                JOptionPane.showMessageDialog(null, "Data updated successfully");
             } catch (HeadlessException | SQLException e) {
                 JOptionPane.showMessageDialog(null, e);
             }
-
         } else {
             JOptionPane.showMessageDialog(null, "Student ID CANT BE EMPTY");
         }
+
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed

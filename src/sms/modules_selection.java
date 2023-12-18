@@ -3,9 +3,12 @@ package sms;
 import java.awt.Color;
 import java.awt.HeadlessException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JOptionPane;
 import net.proteanit.sql.DbUtils;
 
@@ -13,7 +16,7 @@ public class modules_selection extends javax.swing.JFrame {
 
     Connection conn = null;
     Statement stmt = null;
-    ResultSet rs = null;
+    ResultSet rs = null, rss = null;
 
     public modules_selection() {
         super("Module Selection");
@@ -26,7 +29,7 @@ public class modules_selection extends javax.swing.JFrame {
         try {
             jTable1.setShowGrid(true);
             stmt = conn.createStatement();
-            String los = "SELECT UPPER(module.intitule) AS MODULE_TITLE, UPPER(filiere.intitule) AS FILIERE_TITLE, UPPER(departement.intitule) AS DEPARTEMENT_TITLE FROM module, filiere, departement WHERE module.filiere_id = filiere.id AND filiere.id = departement.id AND module.professeur_id is null";
+            String los = "SELECT UPPER(module.intitule) AS MODULE_TITLE, UPPER(filiere.intitule) AS FILIERE_TITLE, UPPER(departement.intitule) AS DEPARTEMENT_TITLE FROM module, filiere, departement WHERE module.filiere_id = filiere.id AND filiere.departement_id= departement.id AND module.professeur_id is null";
             rs = stmt.executeQuery(los);
             jTable1.setModel(DbUtils.resultSetToTableModel(rs));
             jTable1.setShowGrid(true);
@@ -332,19 +335,109 @@ public class modules_selection extends javax.swing.JFrame {
     }//GEN-LAST:event_teacher_moduleActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+//        if (!tid.getText().isEmpty()) {
+//            String moduleEntered = teacher_module.getText();
+//            String teacherID = tid.getText();
+//            try {
+//                stmt = conn.createStatement();
+//                String sqls = "select * from enseignant where id='" + teacherID + "'";
+//                rs = stmt.executeQuery(sqls);
+//                if (rs.next()) {
+//                    rs.close();
+//                    sqls = "select * from module where intitule='" + moduleEntered + "'";
+//                    rs = stmt.executeQuery(sqls);
+//                    if (rs.next()) {
+//                        String sql = "update module SET professeur_id='" + teacherID + "' where intitule='" + moduleEntered + "' ";
+//                        stmt.executeUpdate(sql);
+//                        String sqls1 = "select * from module where intitule='" + moduleEntered + "'";
+//                        rs = stmt.executeQuery(sqls1);
+//                        rs.next();
+//                        String module_id = rs.getString("id");
+//                        stmt.close();
+//                        rs.close();
+//                        stmt = conn.createStatement();
+//                        String sql1 = "select * from grades where module_id='" + module_id + "'";
+//                        rss = stmt.executeQuery(sql1);
+//                        List<String> modules = new ArrayList<>();
+//                        while (rss.next()) {
+//                            JOptionPane.showMessageDialog(null, "Module Registered+++++++");
+//                            modules.add(rss.getString("student_id"));
+//                        }
+//                        rss.close();
+//                        stmt.close();
+//                        stmt = conn.createStatement(); // Create a new statement for insertion
+//                        for (String module : modules) {
+//                            String sql2 = "update grades SET teacher_id='" + teacherID + "' where module_id='" + module_id + "' and student_id='" + module + "'";
+//                            stmt.executeUpdate(sql2);
+//                        }
+//                        JOptionPane.showMessageDialog(null, "Module Registered");
+//                        showRecord();
+//                    } else {
+//                        JOptionPane.showMessageDialog(null, "Module Not Found");
+//                    }
+//                } else {
+//                    JOptionPane.showMessageDialog(null, "Teacher Not Found");
+//                }
+//            } catch (HeadlessException | SQLException e) {
+//                JOptionPane.showMessageDialog(null, e);
+//            }
+//        } else {
+//            JOptionPane.showMessageDialog(null, "Please enter your Teaching ID");
+//        }
+
         if (!tid.getText().isEmpty()) {
             String moduleEntered = teacher_module.getText();
             String teacherID = tid.getText();
+            PreparedStatement pstmt = null;
             try {
-                stmt = conn.createStatement();
-                String sqls = "select * from enseignant where id='" + teacherID + "'";
-                rs = stmt.executeQuery(sqls);
+                String sqls = "select * from enseignant where id=?";
+                pstmt = conn.prepareStatement(sqls);
+                pstmt.setString(1, teacherID);
+                rs = pstmt.executeQuery();
                 if (rs.next()) {
-                    sqls = "select * from module where intitule='" + moduleEntered + "'";
-                    rs = stmt.executeQuery(sqls);
+                    rs.close();
+                    pstmt.close();
+
+                    sqls = "select * from module where intitule=?";
+                    pstmt = conn.prepareStatement(sqls);
+                    pstmt.setString(1, moduleEntered);
+                    rs = pstmt.executeQuery();
                     if (rs.next()) {
-                        String sql = "update module SET professeur_id='" + teacherID + "' where intitule='" + moduleEntered + "' ";
-                        stmt.executeUpdate(sql);
+                        String sql = "update module SET professeur_id=? where intitule=?";
+                        pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, teacherID);
+                        pstmt.setString(2, moduleEntered);
+                        pstmt.executeUpdate();
+
+                        String sqls1 = "select * from module where intitule=?";
+                        pstmt = conn.prepareStatement(sqls1);
+                        pstmt.setString(1, moduleEntered);
+                        rs = pstmt.executeQuery();
+                        rs.next();
+                        String module_id = rs.getString("id");
+                        rs.close();
+                        pstmt.close();
+
+                        String sql1 = "select * from grades where module_id=?";
+                        pstmt = conn.prepareStatement(sql1);
+                        pstmt.setString(1, module_id);
+                        rss = pstmt.executeQuery();
+                        List<String> modules = new ArrayList<>();
+                        while (rss.next()) {
+                            JOptionPane.showMessageDialog(null, "Module Registered+++++++");
+                            modules.add(rss.getString("student_id"));
+                        }
+                        rss.close();
+                        pstmt.close();
+
+                        String sql2 = "update grades SET teacher_id=? where module_id=? and student_id=?";
+                        pstmt = conn.prepareStatement(sql2);
+                        for (String module : modules) {
+                            pstmt.setString(1, teacherID);
+                            pstmt.setString(2, module_id);
+                            pstmt.setString(3, module);
+                            pstmt.executeUpdate();
+                        }
                         JOptionPane.showMessageDialog(null, "Module Registered");
                         showRecord();
                     } else {
@@ -355,6 +448,20 @@ public class modules_selection extends javax.swing.JFrame {
                 }
             } catch (HeadlessException | SQLException e) {
                 JOptionPane.showMessageDialog(null, e);
+            } finally {
+                try {
+                    if (rs != null) {
+                        rs.close();
+                    }
+                    if (rss != null) {
+                        rss.close();
+                    }
+                    if (pstmt != null) {
+                        pstmt.close();
+                    }
+                } catch (SQLException e) {
+                    JOptionPane.showMessageDialog(null, e);
+                }
             }
         } else {
             JOptionPane.showMessageDialog(null, "Please enter your Teaching ID");
